@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head><title>Покупки</title></head>
+<body>
+<h1>Покупки</h1>
+
+<table border="1">
+<tr><th>Книга</th><th>Количество</th><th>Итого</th><th>Время</th></tr>
+{% for p in purchases %}
+<tr>
+<td>{{ p.book_title }}</td>
+<td>{{ p.quantity }}</td>
+<td>{{ p.total_price }}</td>
+<td>{{ p.date }}</td>
+</tr>
+{% endfor %}
+</table>
+
+<a href="/web/books">Назад</a>
+</body>
+</html>

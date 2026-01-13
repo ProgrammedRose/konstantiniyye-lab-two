@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head><title>Книги</title></head>
+<body>
+    <h1>Книги</h1>
+
+    <table border="1">
+    <tr><th>ID</th><th>Заголовок</th><th>Автор</th><th>Цена за шт</th></tr>
+    {% for book in books %}
+    <tr>
+        <td>{{ book.id }}</td>
+        <td>{{ book.title }}</td>
+        <td>{{ book.author }}</td>
+        <td>{{ book.price }}</td>
+    </tr>
+    {% endfor %}
+    </table>
+
+    <a href="/web/purchase">Купить книгу</a>
+    <a href="/web/purchases">Посмотреть покупки</a>
+</body>
+</html>
