@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register - Bookstore</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; }
+        .error { color: red; margin-top: 10px; }
+        .success { color: green; margin-top: 10px; }
+        .links { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Register for Bookstore</h1>
+
+    <form id="registerForm">
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required minlength="3">
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required minlength="6">
+        </div>
+
+        <div class="form-group">
+            <label for="confirmPassword">Confirm Password:</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" required>
+        </div>
+
+        <button type="submit">Register</button>
+
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="success" class="success" style="display: none;"></div>
+    </form>
+
+    <div class="links">
+        <p>Already have an account? <a href="/web/login">Login here</a></p>
+        <p><a href="/web/books">Back to Books</a></p>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // Проверяем совпадение паролей
+            if (password !== confirmPassword) {
+                document.getElementById('error').textContent = 'Passwords do not match';
+                document.getElementById('error').style.display = 'block';
+                return;
+            }
+
+            const userData = {
+                username: username,
+                email: email,
+                password: password
+            };
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('success').textContent =
+                        `Registration successful! Welcome ${data.username}`;
+                    document.getElementById('success').style.display = 'block';
+                    document.getElementById('error').style.display = 'none';
+
+                    // Автоматический логин после регистрации
+                    setTimeout(() => {
+                        window.location.href = '/web/login';
+                    }, 2000);
+                } else {
+                    const error = await response.json();
+                    document.getElementById('error').textContent = error.detail || 'Registration failed';
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('success').style.display = 'none';
+                }
+            } catch (error) {
+                document.getElementById('error').textContent = 'Network error';
+                document.getElementById('error').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,4 +1,7 @@
 
+# Сервис книжки
+# Создает ее, добовляет, удаляет и обновляет книги, и еще есть гетер всех книг.
+
 from typing import List
 from src.app.application.ports.book_repository import BookRepository
 from src.app.application.dto.book_dto import (
@@ -9,16 +12,14 @@ from src.app.application.dto.book_dto import (
 from src.app.domain.entities.book import Book
 
 
-# Сервис книжки
-# Создает ее, добовляет, удаляет и обновляет книги, и еще есть гетер всех книг.
-
 class BookService:
+    """Сервис книг (асинхронный)"""
 
     def __init__(self, repository: BookRepository):
         self.repository = repository
 
-    def get_all_books(self) -> List[BookReadDTO]:
-        books = self.repository.get_all()
+    async def get_all_books(self) -> List[BookReadDTO]:
+        books = await self.repository.get_all()
         return [
             BookReadDTO(
                 id=i,
@@ -29,13 +30,25 @@ class BookService:
             for i, book in enumerate(books)
         ]
 
-    def add_book(self, dto: BookCreateDTO) -> int:
+    async def add_book(self, dto: BookCreateDTO) -> int:
         book = Book(dto.title, dto.author, dto.price)
-        return self.repository.add(book)
+        return await self.repository.add(book)
 
-    def update_book(self, book_id: int, dto: BookUpdateDTO) -> None:
+    async def update_book(self, book_id: int, dto: BookUpdateDTO) -> None:
         book = Book(dto.title, dto.author, dto.price)
-        self.repository.update(book_id, book)
+        await self.repository.update(book_id, book)
 
-    def delete_book(self, book_id: int) -> None:
-        self.repository.delete(book_id)
+    async def delete_book(self, book_id: int) -> None:
+        await self.repository.delete(book_id)
+
+    async def get_book_by_id(self, book_id: int) -> BookReadDTO:
+        book = await self.repository.get_by_id(book_id)
+        if not book:
+            raise ValueError(f"Book with id {book_id} not found")
+
+        return BookReadDTO(
+            id=book_id,
+            title=book.title,
+            author=book.author,
+            price=book.price
+        )

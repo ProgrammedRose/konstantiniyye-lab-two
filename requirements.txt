@@ -1,0 +1,20 @@
+# Основные
+fastapi
+uvicorn
+jinja2
+
+# База данных
+sqlalchemy
+asyncpg
+alembic
+
+# Аутентификация
+python-jose[cryptography]
+passlib[bcrypt]
+
+# Переменные окружения
+pydantic-settings
+python-dotenv
+
+# Утилиты
+faker

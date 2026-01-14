@@ -1,0 +1,72 @@
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: bookstore_db
+    environment:
+      POSTGRES_DB: bookstore
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - bookstore_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: . #src
+    container_name: bookstore_app
+    environment:
+      # Настройки базы данных
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: bookstore
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+      # Настройки приложения
+      SECRET_KEY: your-super-secret-key-change-in-production
+      WAIT_FOR_DB: "true"
+      SEED_DATABASE: "true"
+
+      # FastAPI настройки
+      ENVIRONMENT: development
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./alembic:/app/alembic
+      - ./scripts:/app/scripts
+    networks:
+      - bookstore_network
+    command: /app/docker/entrypoint.sh
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: bookstore_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@bookstore.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - bookstore_network
+
+volumes:
+  postgres_data:
+
+networks:
+  bookstore_network:
+    driver: bridge

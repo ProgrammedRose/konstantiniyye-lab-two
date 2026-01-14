@@ -1,26 +1,48 @@
-# app/web/dependencies.py
-
-from src.app.infrastructure.storage.memory_storage import MemoryStorage
-from src.app.infrastructure.repositories.in_memory_book_repository import InMemoryBookRepository
-from src.app.infrastructure.repositories.in_memory_purchase_repository import InMemoryPurchaseRepository
+from typing import AsyncGenerator
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Depends
+from src.app.infrastructure.database.connection import get_db_session
+from src.app.infrastructure.repositories.sqlalchemy_book_repository import SQLAlchemyBookRepository
+from src.app.infrastructure.repositories.sqlalchemy_purchase_repository import SQLAlchemyPurchaseRepository
+from src.app.infrastructure.repositories.sqlalchemy_auth_repository import SQLAlchemyAuthRepository
 
 from src.app.application.services.book_service import BookService
 from src.app.application.services.purchase_service import PurchaseService
+from src.app.application.services.auth_service import AuthService
 
 
-_book_storage = MemoryStorage()
-_purchase_storage = MemoryStorage()
-
-_book_repository = InMemoryBookRepository(_book_storage)
-_purchase_repository = InMemoryPurchaseRepository(_purchase_storage)
+# Зависимости для репозиториев
+async def get_book_repository(db: AsyncSession = Depends(get_db_session)) -> SQLAlchemyBookRepository:
+    return SQLAlchemyBookRepository(db)
 
 
-def get_book_service() -> BookService:
-    return BookService(_book_repository)
+async def get_purchase_repository(db: AsyncSession = Depends(get_db_session)) -> SQLAlchemyPurchaseRepository:
+    return SQLAlchemyPurchaseRepository(db)
 
 
-def get_purchase_service() -> PurchaseService:
-    return PurchaseService(
-        purchase_repository=_purchase_repository,
-        book_repository=_book_repository
-    )
+async def get_auth_repository(db: AsyncSession = Depends(get_db_session)) -> SQLAlchemyAuthRepository:
+    return SQLAlchemyAuthRepository(db)
+
+
+# Зависимости для сервисов
+async def get_book_service(
+    repository: SQLAlchemyBookRepository = Depends(get_book_repository)
+) -> BookService:
+    return BookService(repository)
+
+
+async def get_purchase_service(
+    purchase_repository: SQLAlchemyPurchaseRepository = Depends(get_purchase_repository),
+    book_repository: SQLAlchemyBookRepository = Depends(get_book_repository)
+) -> PurchaseService:
+    return PurchaseService(purchase_repository, book_repository)
+
+
+async def get_auth_service(
+    repository: SQLAlchemyAuthRepository = Depends(get_auth_repository)
+) -> AuthService:
+    return AuthService(repository)
+
+
+# Общая зависимость для БД
+get_db = get_db_session
