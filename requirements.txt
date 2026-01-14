@@ -18,3 +18,7 @@ python-dotenv
 
 # Утилиты
 faker
+
+pyjwt
+email-validator
+python-multipart
