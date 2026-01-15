@@ -53,3 +53,9 @@ def delete_book(
         service.delete_book(book_id)
     except IndexError:
         raise HTTPException(status_code=404, detail="Book not found")
+    except ValueError as e:
+        # Обрабатываем ошибку с связанными покупками
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # Общая обработка других ошибок
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")

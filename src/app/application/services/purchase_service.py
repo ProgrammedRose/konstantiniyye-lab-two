@@ -1,4 +1,3 @@
-
 from typing import List
 from src.app.application.ports.purchase_repository import PurchaseRepository
 from src.app.application.ports.book_repository import BookRepository
@@ -8,10 +7,9 @@ from src.app.application.dto.purchase_dto import (
 )
 from src.app.domain.entities.purchase import Purchase
 from src.app.domain.rules.purchase_rules import check_max_purchases
+from src.app.domain.entities.book import Book
 
-MAX_QUANTITY = 50 # по органичению условия
-
-# Сервис покупок (создать покупку и посмотреть все покупки)
+MAX_QUANTITY = 50
 
 class PurchaseService:
 
@@ -29,7 +27,7 @@ class PurchaseService:
             PurchaseReadDTO(
                 book_title=p.book.title,
                 quantity=p.quantity,
-                total_price=p.book.price * p.quantity, # p.price
+                total_price=p.book.price * p.quantity,
                 date=p.date
             )
             for p in purchases
@@ -47,5 +45,9 @@ class PurchaseService:
         if book is None:
             raise ValueError("Book not found")
 
-        purchase = Purchase(book, dto.quantity)
+        # Убедитесь, что у книги есть ID
+        if book.id is None:
+            raise ValueError("Book ID is missing")
+
+        purchase = Purchase(book=book, quantity=dto.quantity)
         self.purchase_repository.add(purchase)

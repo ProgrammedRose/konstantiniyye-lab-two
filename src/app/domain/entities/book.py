@@ -1,6 +1,5 @@
-
 class Book:
-    def __init__(self, title: str, author: str, price: float):
+    def __init__(self, title: str, author: str, price: float, id: int = None):
         if not title.strip():
             raise ValueError("Title cannot be empty")
         if not author.strip():
@@ -8,6 +7,7 @@ class Book:
         if price < 0:
             raise ValueError("Price cannot be negative")
 
+        self.id = id  # Добавляем ID для работы с БД
         self.title = title
         self.author = author
         self.price = price
@@ -28,4 +28,4 @@ class Book:
         self.author = new_author
 
     def __repr__(self):
-        return f"Book(title='{self.title}', author='{self.author}', price={self.price})"
+        return f"Book(id={self.id}, title='{self.title}', author='{self.author}', price={self.price})"

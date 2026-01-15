@@ -1,13 +1,10 @@
-
 from dataclasses import dataclass
 from datetime import datetime
-
 
 @dataclass
 class PurchaseCreateDTO:
     book_id: int
     quantity: int
-
 
 @dataclass
 class PurchaseReadDTO:

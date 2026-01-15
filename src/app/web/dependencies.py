@@ -1,26 +1,23 @@
-# app/web/dependencies.py
+from fastapi import Depends
 
-from src.app.infrastructure.storage.memory_storage import MemoryStorage
-from src.app.infrastructure.repositories.in_memory_book_repository import InMemoryBookRepository
-from src.app.infrastructure.repositories.in_memory_purchase_repository import InMemoryPurchaseRepository
-
+from src.app.infrastructure.db.session import get_db
+from src.app.infrastructure.repositories.sqlalchemy_book_repository import SQLAlchemyBookRepository
+from src.app.infrastructure.repositories.sqlalchemy_purchase_repository import SQLAlchemyPurchaseRepository
 from src.app.application.services.book_service import BookService
 from src.app.application.services.purchase_service import PurchaseService
+from sqlalchemy.orm import Session
 
+def get_book_repository(db: Session = Depends(get_db)):
+    return SQLAlchemyBookRepository(db)
 
-_book_storage = MemoryStorage()
-_purchase_storage = MemoryStorage()
+def get_purchase_repository(db: Session = Depends(get_db)):
+    return SQLAlchemyPurchaseRepository(db)
 
-_book_repository = InMemoryBookRepository(_book_storage)
-_purchase_repository = InMemoryPurchaseRepository(_purchase_storage)
+def get_book_service(db: Session = Depends(get_db)) -> BookService:
+    repository = get_book_repository(db)
+    return BookService(repository)
 
-
-def get_book_service() -> BookService:
-    return BookService(_book_repository)
-
-
-def get_purchase_service() -> PurchaseService:
-    return PurchaseService(
-        purchase_repository=_purchase_repository,
-        book_repository=_book_repository
-    )
+def get_purchase_service(db: Session = Depends(get_db)) -> PurchaseService:
+    book_repository = get_book_repository(db)
+    purchase_repository = get_purchase_repository(db)
+    return PurchaseService(purchase_repository, book_repository)

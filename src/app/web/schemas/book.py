@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 # Пидантик нужен нам в связи со Сваггером (в рамках Фаст АПИ):
@@ -27,9 +29,9 @@ class BookCreateSchema(BaseModel):
 
 
 class BookUpdateSchema(BaseModel):
-    title: str | None = None
-    author: str | None = None
-    price: float | None = None
+    title: Optional[str] = None
+    author: Optional[str] = None
+    price: Optional[float] = None
 
 
 class BookReadSchema(BaseModel):

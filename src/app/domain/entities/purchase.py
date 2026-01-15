@@ -1,9 +1,8 @@
-
 from datetime import datetime
 from src.app.domain.entities.book import Book
 
 class Purchase:
-    def __init__(self, book: Book, quantity: int = 1):
+    def __init__(self, book: Book, quantity: int = 1, date: datetime = None):
         if not isinstance(book, Book):
             raise TypeError("Purchase must contain a Book entity")
         if quantity <= 0:
@@ -12,7 +11,7 @@ class Purchase:
         self.book = book
         self.quantity = quantity
         self.price = book.price * quantity
-        self.date = datetime.now()
+        self.date = date or datetime.now()
 
     def __repr__(self):
         return (

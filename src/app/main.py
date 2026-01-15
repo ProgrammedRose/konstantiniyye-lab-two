@@ -1,14 +1,19 @@
-from fastapi import FastAPI, Request, Depends, Form
+import os
+from fastapi import FastAPI, Request, Depends, Form, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from starlette.status import HTTP_303_SEE_OTHER
+from dotenv import load_dotenv
+from sqlalchemy.orm import Session
 
 # API routers
 from src.app.web.api.books import router as books_api_router
 from src.app.web.api.purchases import router as purchases_api_router
 
 # dependencies
-from src.app.web.dependencies import get_book_service, get_purchase_service
+from src.app.web.dependencies import get_book_service, get_purchase_service, get_db
+from src.app.web.security import get_current_user
 
 # application services
 from src.app.application.services.book_service import BookService
@@ -17,34 +22,39 @@ from src.app.application.services.purchase_service import PurchaseService
 # DTO
 from src.app.application.dto.purchase_dto import PurchaseCreateDTO
 
+# DB initialization
+from src.app.infrastructure.db.base import Base
+from src.app.infrastructure.db.session import engine, SessionLocal
+from src.app.infrastructure.db.models import BookDB, PurchaseDB  # noqa: F401
 
+load_dotenv()
 
-# Делаем FastAPI app
+# Create tables if not exists
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI(
     title="Bookstore Application",
-    description="Lab 01 - WEB Techs",
-    version="1.0.1"
+    description="Lab 02 - WEB Techs with PostgreSQL",
+    version="2.0.0"
 )
 
-
-
-# API (JSON и Swagger)
-app.include_router(books_api_router)
-app.include_router(purchases_api_router)
-
-
-
-# Шаблон HTML...
-# Тут используем минимальный юай адаптер Фаста к Jinja2
-# Он шаблонизирует наш HTML и дает нам готовую HTML-страницу
+# Include API routers with authentication
+app.include_router(
+    books_api_router,
+    dependencies=[Depends(get_current_user)]
+)
+app.include_router(
+    purchases_api_router,
+    dependencies=[Depends(get_current_user)]
+)
 
 templates = Jinja2Templates(directory="src/app/web/views")
 
-# HTML Веб страницы
 @app.get("/web/books", response_class=HTMLResponse)
 def web_books(
     request: Request,
-    service: BookService = Depends(get_book_service)
+    service: BookService = Depends(get_book_service),
+    db: Session = Depends(get_db)
 ):
     books = service.get_all_books()
     return templates.TemplateResponse(
@@ -52,18 +62,17 @@ def web_books(
         {"request": request, "books": books}
     )
 
-
 @app.get("/web/purchase", response_class=HTMLResponse)
 def web_purchase_form(
     request: Request,
-    service: BookService = Depends(get_book_service)
+    service: BookService = Depends(get_book_service),
+    db: Session = Depends(get_db)
 ):
     books = service.get_all_books()
     return templates.TemplateResponse(
         "purchase.html",
         {"request": request, "books": books}
     )
-
 
 @app.post("/web/purchase")
 def web_create_purchase(
@@ -86,11 +95,11 @@ def web_create_purchase(
         status_code=HTTP_303_SEE_OTHER
     )
 
-
 @app.get("/web/purchases", response_class=HTMLResponse)
 def web_purchases(
     request: Request,
-    service: PurchaseService = Depends(get_purchase_service)
+    service: PurchaseService = Depends(get_purchase_service),
+    db: Session = Depends(get_db)
 ):
     purchases = service.get_all_purchases()
     return templates.TemplateResponse(
@@ -98,11 +107,20 @@ def web_purchases(
         {"request": request, "purchases": purchases}
     )
 
-
-# Root redirect
 @app.get("/", include_in_schema=False)
 def root():
     return RedirectResponse(
         url="/web/books",
         status_code=HTTP_303_SEE_OTHER
     )
+
+# Auth endpoints
+@app.post("/token")
+def login_for_access_token():
+    # Для лабы используем статический токен
+    access_token = create_access_token(
+        data={"sub": "admin"}
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+from src.app.web.security import create_access_token  # noqa: E402
