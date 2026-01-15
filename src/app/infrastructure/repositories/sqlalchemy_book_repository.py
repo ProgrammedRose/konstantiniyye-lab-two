@@ -54,6 +54,7 @@ class SQLAlchemyBookRepository(BookRepository):
         self.session.add(book_model)
         await self.session.flush()
         await self.session.refresh(book_model)
+        await self.session.commit()
 
         return book_model.id
 

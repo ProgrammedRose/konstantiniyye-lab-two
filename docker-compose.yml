@@ -65,8 +65,12 @@ services:
     networks:
       - bookstore_network
 
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
 volumes:
   postgres_data:
+  pgadmin_data:
 
 networks:
   bookstore_network:

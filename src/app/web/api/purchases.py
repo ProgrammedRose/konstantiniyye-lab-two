@@ -16,17 +16,17 @@ router = APIRouter(
 
 
 @router.get("", response_model=List[PurchaseReadSchema])
-def get_purchases(service: PurchaseService = Depends(get_purchase_service)):
+async def get_purchases(service: PurchaseService = Depends(get_purchase_service)):
     return service.get_all_purchases()
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-def create_purchase(
+async def create_purchase(
     schema: PurchaseCreateSchema,
     service: PurchaseService = Depends(get_purchase_service)
 ):
     dto = PurchaseCreateDTO(**schema.model_dump())
     try:
-        service.create_purchase(dto)
+        await service.create_purchase(dto)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

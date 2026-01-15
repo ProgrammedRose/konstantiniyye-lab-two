@@ -10,7 +10,11 @@ alembic
 
 # Аутентификация
 python-jose[cryptography]
-passlib[bcrypt]
+
+#passlib
+#bcrypt
+bcrypt==4.1.2
+passlib==1.7.4
 
 # Переменные окружения
 pydantic-settings
