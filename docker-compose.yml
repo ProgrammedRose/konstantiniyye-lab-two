@@ -1,8 +1,12 @@
 services:
   app:
     build: .
+    # добавили
+    environment:
+      - PYTHONPATH=/app/src
     ports:
       - "8000:8000"
+      - "50051:50051"
     env_file:
       - .env
     depends_on:
@@ -11,22 +15,29 @@ services:
     volumes:
       - .:/app
     command: >
-      sh -c "alembic upgrade head &&
-             python -c 'from src.app.infrastructure.db.seed import seed_database; seed_database()' &&
-             uvicorn src.app.main:app --host 0.0.0.0 --port 8000"
+      sh -c "python -m grpc_tools.protoc -I src/app/grpc/protos --python_out=src/app/grpc/protos --grpc_python_out=src/app/grpc/protos src/app/grpc/protos/*.proto &&
+             test -f src/app/grpc/__init__.py || touch src/app/grpc/__init__.py &&
+             test -f src/app/grpc/protos/__init__.py || touch src/app/grpc/protos/__init__.py &&
+             for f in src/app/grpc/protos/*_pb2*.py; do
+               [ -f \"$$f\" ] && sed -i 's/^import \\([a-z0-9_]*_pb2\\) as \\([a-z0-9_]*__pb2\\)/from . import \\1 as \\2/' \"$$f\"
+             done &&
+             alembic upgrade head &&
+             PYTHONPATH=/app/src uvicorn src.app.main:app --host 0.0.0.0 --port 8000"
+
+  
 
   db:
     image: postgres:15
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: bookstore
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"  # Проброс порта для локального подключения
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bookstore"]
       interval: 5s
       timeout: 5s
       retries: 5

@@ -1,3 +1,4 @@
+# src.app/web/api/books.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 
@@ -9,6 +10,7 @@ from src.app.web.schemas.book import (
 from src.app.web.dependencies import get_book_service
 from src.app.application.services.book_service import BookService
 from src.app.application.dto.book_dto import BookCreateDTO, BookUpdateDTO
+from src.app.web.security import require_role
 
 router = APIRouter(
     prefix="/api/books",
@@ -21,7 +23,7 @@ def get_books(service: BookService = Depends(get_book_service)):
     return service.get_all_books()
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_role(["admin"]))])
 def create_book(
     schema: BookCreateSchema,
     service: BookService = Depends(get_book_service)
@@ -31,7 +33,7 @@ def create_book(
     return {"id": book_id}
 
 
-@router.put("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.put("/{book_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_role(["admin"]))])
 def update_book(
     book_id: int,
     schema: BookUpdateSchema,
@@ -44,7 +46,7 @@ def update_book(
         raise HTTPException(status_code=404, detail="Book not found")
 
 
-@router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_role(["admin"]))])
 def delete_book(
     book_id: int,
     service: BookService = Depends(get_book_service)
@@ -54,8 +56,6 @@ def delete_book(
     except IndexError:
         raise HTTPException(status_code=404, detail="Book not found")
     except ValueError as e:
-        # Обрабатываем ошибку с связанными покупками
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        # Общая обработка других ошибок
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")

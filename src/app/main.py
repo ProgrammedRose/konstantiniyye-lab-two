@@ -1,4 +1,6 @@
+# src.app/main.py
 import os
+import asyncio
 from fastapi import FastAPI, Request, Depends, Form, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -10,6 +12,8 @@ from sqlalchemy.orm import Session
 # API routers
 from src.app.web.api.books import router as books_api_router
 from src.app.web.api.purchases import router as purchases_api_router
+from src.app.web.api.auth import router as auth_api_router
+from src.app.web.api.users import router as users_api_router
 
 # dependencies
 from src.app.web.dependencies import get_book_service, get_purchase_service, get_db
@@ -27,6 +31,10 @@ from src.app.infrastructure.db.base import Base
 from src.app.infrastructure.db.session import engine, SessionLocal
 from src.app.infrastructure.db.models import BookDB, PurchaseDB  # noqa: F401
 
+# grpc
+from src.app.grpc.server import serve as start_grpc_server
+import asyncio
+
 load_dotenv()
 
 # Create tables if not exists
@@ -34,21 +42,25 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Bookstore Application",
-    description="Lab 02 - WEB Techs with PostgreSQL",
-    version="2.0.0"
+    description="Lab 02 -> Lab 03 - WEB + Roles + gRPC",
+    version="3.0.0"
 )
 
-# Include API routers with authentication
-app.include_router(
-    books_api_router,
-    dependencies=[Depends(get_current_user)]
-)
-app.include_router(
-    purchases_api_router,
-    dependencies=[Depends(get_current_user)]
-)
+# Include API routers without global auth dependency; endpoints themselves have role deps
+app.include_router(books_api_router)
+app.include_router(purchases_api_router)
+app.include_router(auth_api_router)
+app.include_router(users_api_router)
 
 templates = Jinja2Templates(directory="src/app/web/views")
+
+
+@app.on_event("startup")
+async def startup_event():
+    # start grpc server in background as a task
+    loop = asyncio.get_event_loop()
+    loop.create_task(start_grpc_server())
+
 
 @app.get("/web/books", response_class=HTMLResponse)
 def web_books(
@@ -113,14 +125,3 @@ def root():
         url="/web/books",
         status_code=HTTP_303_SEE_OTHER
     )
-
-# Auth endpoints
-@app.post("/token")
-def login_for_access_token():
-    # Для лабы используем статический токен
-    access_token = create_access_token(
-        data={"sub": "admin"}
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
-
-from src.app.web.security import create_access_token  # noqa: E402

@@ -1,9 +1,11 @@
+# src.app/web/security.py
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
+from typing import Dict, Any, Optional
 
 load_dotenv()
 
@@ -11,15 +13,17 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
-def create_access_token(data: dict):
+
+def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+
+def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -28,8 +32,22 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
-        if username != "admin":
+        role: str = payload.get("role", "anonymous")
+        if username is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    return {"username": username}
+    return {"username": username, "role": role}
+
+
+def require_role(roles: list):
+    def dependency(user: Dict[str, Any] = Depends(get_current_user)):
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+        user_role = user.get("role", "anonymous")
+        if "anonymous" in roles and user_role == "anonymous":
+            return user
+        if user_role not in roles:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Operation not permitted")
+        return user
+    return dependency

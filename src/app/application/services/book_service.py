@@ -21,12 +21,12 @@ class BookService:
         books = self.repository.get_all()
         return [
             BookReadDTO(
-                id=i,
+                id=book.id,
                 title=book.title,
                 author=book.author,
                 price=book.price
             )
-            for i, book in enumerate(books)
+            for book in books
         ]
 
     def add_book(self, dto: BookCreateDTO) -> int:
@@ -34,6 +34,8 @@ class BookService:
         return self.repository.add(book)
 
     def update_book(self, book_id: int, dto: BookUpdateDTO) -> None:
+        # For simplicity replace all fields — BookUpdateDTO in this implementation should contain fields
+        # (if you want partial update, adapt accordingly)
         book = Book(dto.title, dto.author, dto.price)
         self.repository.update(book_id, book)
 

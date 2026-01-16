@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import (Column, Integer,
+                        String, Float, DateTime, ForeignKey, Text)
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .base import Base
@@ -23,3 +24,11 @@ class PurchaseDB(Base):
     date = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     book = relationship("BookDB", lazy="joined")
+
+class UserDB(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(150), unique=True, nullable=False, index=True)
+    password_hash = Column(Text, nullable=False)
+    role = Column(String(50), nullable=False, default="user")
